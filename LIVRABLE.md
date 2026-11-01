@@ -2,7 +2,7 @@
 
 Jeu de construction virtuel type Minecraft en Python : serveur autoritaire + client, protocole JSON, chunks persistants (cahier des charges : CAHIER_DES_CHARGES.md dans le projet).
 
-Produit par l'atelier de codage hermes-web 0.25.0 le 2026-11-01 18:12. Cahier des charges : `CAHIER_DES_CHARGES.md`.
+Produit par l'atelier de codage hermes-web 0.25.1 le 2026-11-01 18:25. Cahier des charges : `CAHIER_DES_CHARGES.md`.
 
 ## Items du backlog
 
@@ -19,16 +19,18 @@ Produit par l'atelier de codage hermes-web 0.25.0 le 2026-11-01 18:12. Cahier de
 - **Synchronisation multi-clients et banc de test à 2 joueurs** — a_faire (priorité 5, 0 ronde(s))
   - demande : Diffusion immédiate des BLOCK_UPDATE à tous les clients (§ F-S02), heartbeats et reconnexion (§ 4.2), prédiction simple côté client (§ F-S03). Critère : script lançant un serveur et deux clients, l'un place un bloc, l'autre le voit ; latence mesurée < 200 ms en local.
 
-## Fichiers du projet (6)
+## Fichiers du projet (7)
 
 - `.gitignore` (69 o)
 - `CAHIER_DES_CHARGES.md` (8636 o)
 - `DEPLOIEMENT.json` (746 o)
+- `LIVRABLE.md` (3204 o)
 - `protocole.md` (1786 o)
 - `protocole.py` (4536 o)
 - `test_protocole.py` (615 o)
 
 ## Historique git
 
+- `4b26c80` 2026-11-01 18:12:53 — atelier : livrable
 - `4eb2923` 2026-11-01 11:03:43 — atelier : validation
 - `b3ac1d9` 2026-11-01 04:26:12 — état initial (atelier)
