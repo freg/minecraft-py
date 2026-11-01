@@ -1,0 +1,33 @@
+{
+  "cibles": [
+    {
+      "nom": "serveur",
+      "commande": "python3 server.py",
+      "env": {
+        "PORT": "25565",
+        "HOTE": "127.0.0.1"
+      },
+      "sante": "tcp:127.0.0.1:25565",
+      "delai_sante_s": 20
+    },
+    {
+      "nom": "client",
+      "commande": "python3 client.py --hote 127.0.0.1 --port 25565 --test",
+      "apres": "serveur",
+      "sante": "",
+      "delai_sante_s": 5
+    }
+  ],
+  "tests": [
+    {
+      "nom": "unitaires (côté client)",
+      "commande": "python3 -m unittest discover -s . -p 'test*.py' -v",
+      "cible": "client"
+    },
+    {
+      "nom": "connexion client → serveur",
+      "commande": "python3 client.py --hote 127.0.0.1 --port 25565 --test",
+      "cible": "client"
+    }
+  ]
+}
