@@ -2,7 +2,7 @@
 
 Jeu de construction virtuel type Minecraft en Python : serveur autoritaire + client, protocole JSON, chunks persistants (cahier des charges : CAHIER_DES_CHARGES.md dans le projet).
 
-Produit par l'atelier de codage hermes-web 0.25.1 le 2026-11-01 18:25. Cahier des charges : `CAHIER_DES_CHARGES.md`.
+Produit par l'atelier de codage hermes-web 0.25.2 le 2026-11-01 18:39. Cahier des charges : `CAHIER_DES_CHARGES.md`.
 
 ## Items du backlog
 
@@ -18,19 +18,22 @@ Produit par l'atelier de codage hermes-web 0.25.1 le 2026-11-01 18:25. Cahier de
   - demande : Sauvegarde/restauration de l'état du monde (§ F-W03) dans un format binaire compact (pas pickle brut : format versionné), à l'arrêt et périodiquement. Critère : redémarrage du serveur avec le monde intact, test unitaire aller-retour.
 - **Synchronisation multi-clients et banc de test à 2 joueurs** — a_faire (priorité 5, 0 ronde(s))
   - demande : Diffusion immédiate des BLOCK_UPDATE à tous les clients (§ F-S02), heartbeats et reconnexion (§ 4.2), prédiction simple côté client (§ F-S03). Critère : script lançant un serveur et deux clients, l'un place un bloc, l'autre le voit ; latence mesurée < 200 ms en local.
+- **Projet déployable selon DEPLOIEMENT.json** — a_faire (priorité 11, 0 ronde(s))
+  - demande : Le projet doit se déployer et se tester avec DEPLOIEMENT.json (lancé par l'atelier depuis une copie du dernier commit) : - cible « serveur » : `python3 server.py` ; variables : PORT=25565, HOTE=127.0.0.1 ; doit répondre à « tcp:127.0.0.1:25565 » en moins de 20 s - cible « client » : `python3 client.py --hote 127.0.0.1 --port 25565 --test` ; doit se terminer avec le code 0 ; démarre après « serveur
 
 ## Fichiers du projet (7)
 
 - `.gitignore` (69 o)
 - `CAHIER_DES_CHARGES.md` (8636 o)
 - `DEPLOIEMENT.json` (746 o)
-- `LIVRABLE.md` (3204 o)
+- `LIVRABLE.md` (3284 o)
 - `protocole.md` (1786 o)
 - `protocole.py` (4536 o)
 - `test_protocole.py` (615 o)
 
 ## Historique git
 
+- `1242ca1` 2026-11-01 18:25:42 — atelier : livrable
 - `4b26c80` 2026-11-01 18:12:53 — atelier : livrable
 - `4eb2923` 2026-11-01 11:03:43 — atelier : validation
 - `b3ac1d9` 2026-11-01 04:26:12 — état initial (atelier)
