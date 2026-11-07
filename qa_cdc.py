@@ -9,7 +9,7 @@ Chaque contrôle porte l'identifiant du cahier des charges (F-W01, F-S02...) ou 
 du backlog (P1..P5). Un fichier absent = contrôle en échec (fonction non livrée), pas sauté.
 Hypothèse de transport, le protocole ne la précisant pas : un message JSON par ligne (\\n) sur TCP.
 """
-import importlib, json, os, py_compile, socket, subprocess, sys, tempfile, time, traceback
+import importlib, json, os, py_compile, signal, socket, subprocess, sys, tempfile, time, traceback
 
 RACINE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, RACINE)
@@ -30,6 +30,8 @@ def controle(ident, libelle):
     def deco(f):
         def lance():
             t0 = time.time()
+            print(f"… {ident:6} {libelle}", end="", flush=True)
+            signal.alarm(60)  # aucun contrôle ne peut bloquer la batterie
             try:
                 f()
                 RESULTATS.append((ident, libelle, "OK", "", time.time() - t0))
@@ -38,6 +40,9 @@ def controle(ident, libelle):
                 if not isinstance(e, (AssertionError, FileNotFoundError)):
                     detail += "\n" + traceback.format_exc(limit=3)
                 RESULTATS.append((ident, libelle, "ÉCHEC", detail, time.time() - t0))
+            finally:
+                signal.alarm(0)
+                print(f"\r{'✅' if RESULTATS[-1][2] == 'OK' else '❌'}", flush=True)
         lance.ordre = len(CONTROLES)
         CONTROLES.append(lance)
         return lance
@@ -57,12 +62,14 @@ class Serveur:
     def __init__(self, donnees):
         exige("server.py")
         env = dict(os.environ, PORT=str(PORT), HOTE=HOTE, DATA_DIR=donnees, MONDE_DIR=donnees)
+        self.journal = os.path.join(donnees, "serveur.log")
         self.p = subprocess.Popen([sys.executable, "server.py"], cwd=donnees_cwd(donnees), env=env,
-                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                                  stdin=subprocess.DEVNULL, stdout=open(self.journal, "ab"),
+                                  stderr=subprocess.STDOUT, start_new_session=True)
         fin = time.time() + 20
         while time.time() < fin:
             if self.p.poll() is not None:
-                raise AssertionError("serveur arrêté au démarrage : " + self.p.stdout.read().decode()[-500:])
+                raise AssertionError("serveur arrêté au démarrage : " + open(self.journal, errors="replace").read()[-500:])
             try:
                 socket.create_connection((HOTE, PORT), 0.5).close()
                 return
@@ -77,7 +84,8 @@ class Serveur:
             try:
                 self.p.wait(5)
             except subprocess.TimeoutExpired:
-                self.p.kill()
+                os.killpg(self.p.pid, signal.SIGKILL)  # tout le groupe (sous-processus compris)
+                self.p.wait(5)
 
 
 def donnees_cwd(donnees):
@@ -149,14 +157,14 @@ def _():
 
 @controle("P1", "auto-test de protocole.py s'exécute")
 def _():
-    r = subprocess.run([sys.executable, "protocole.py"], cwd=RACINE, capture_output=True, text=True, timeout=10)
+    r = subprocess.run([sys.executable, "protocole.py"], cwd=RACINE, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=10)
     assert r.returncode == 0, r.stderr.strip().splitlines()[-1] if r.stderr else f"code {r.returncode}"
 
 
 @controle("P1", "tests unitaires découverts par la commande de DEPLOIEMENT.json")
 def _():
     r = subprocess.run([sys.executable, "-m", "unittest", "discover", "-s", ".", "-p", "test*.py"],
-                       cwd=RACINE, capture_output=True, text=True, timeout=60)
+                       cwd=RACINE, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=60)
     assert "Ran 0 tests" not in r.stderr, "0 test trouvé (fonctions hors unittest.TestCase) : la commande échoue (code 5)"
     assert r.returncode == 0, r.stderr[-400:]
 
@@ -243,7 +251,7 @@ def _():
         s = Serveur(d)
         try:
             r = subprocess.run([sys.executable, "client.py", "--hote", HOTE, "--port", str(PORT), "--test"],
-                               cwd=RACINE, capture_output=True, text=True, timeout=30)
+                               cwd=RACINE, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30)
             assert r.returncode == 0, (r.stdout + r.stderr)[-400:]
         finally:
             s.stop()
@@ -306,16 +314,26 @@ def _():
             s.stop()
 
 
+class Delai(Exception):
+    pass
+
+
+def _alarme(*_):
+    raise Delai("contrôle bloqué plus de 60 s")
+
+
 def main():
+    signal.signal(signal.SIGALRM, _alarme)
+    if "--json" in sys.argv:
+        sys.stdout = open(os.devnull, "w")  # progression muette, JSON seul en sortie
     for c in CONTROLES:
         c()
     ok = sum(r[2] == "OK" for r in RESULTATS)
     if "--json" in sys.argv:
+        sys.stdout = sys.__stdout__
         print(json.dumps({"ok": ok, "total": len(RESULTATS), "controles": [
             {"id": i, "libelle": l, "etat": e, "detail": dt} for i, l, e, dt, _ in RESULTATS]}, ensure_ascii=False, indent=1))
     else:
-        for i, l, e, dt, t in RESULTATS:
-            print(f"{'✅' if e == 'OK' else '❌'} {i:6} {l}  ({t:.1f} s)")
         print(f"\nScore : {ok}/{len(RESULTATS)}")
         for i, l, e, dt, _ in RESULTATS:
             if e != "OK":
