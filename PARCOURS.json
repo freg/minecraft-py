@@ -1,0 +1,19 @@
+{
+  "nom": "deux joueurs construisent",
+  "transport": "json-tcp",
+  "serveur": {"cible": "serveur"},
+  "port": 25610,
+  "etapes": [
+    {"titre": "alice rejoint", "client": "alice", "envoie": {"type": "JOIN", "payload": {"username": "alice", "version": "0.1"}}, "attend": {"type": "PLAYER_JOINED"}},
+    {"titre": "alice reçoit le monde", "client": "alice", "attend": {"type": "CHUNK_LOADED"}, "delai_s": 2},
+    {"titre": "bob rejoint", "client": "bob", "envoie": {"type": "JOIN", "payload": {"username": "bob", "version": "0.1"}}, "attend": {"type": "PLAYER_JOINED"}},
+    {"titre": "alice apprend l'arrivée de bob", "client": "alice", "attend": {"type": "PLAYER_JOINED", "payload": {"username": "bob"}}, "delai_s": 1},
+    {"titre": "alice se déplace", "client": "alice", "envoie": {"type": "PLAYER_MOVE", "payload": {"x": 4.5, "y": 71, "z": 4.5, "orientation": "NORTH"}}, "pause_s": 0.4},
+    {"titre": "alice pose une pierre", "client": "alice", "envoie": {"type": "PLACE_ATTEMPT", "payload": {"x": 5, "y": 70, "z": 5, "block_id": "STONE"}}, "attend": {"type": "BLOCK_UPDATE", "payload": {"x": 5, "y": 70, "z": 5, "new_block_id": "STONE"}}},
+    {"titre": "bob voit la pierre (diffusion)", "client": "bob", "attend": {"type": "BLOCK_UPDATE", "payload": {"x": 5, "y": 70, "z": 5}}, "delai_s": 1},
+    {"titre": "bob mine la pierre", "client": "bob", "envoie": {"type": "MINING_ATTEMPT", "payload": {"x": 5, "y": 70, "z": 5}}, "attend": {"type": "BLOCK_UPDATE", "payload": {"x": 5, "y": 70, "z": 5, "new_block_id": "AIR"}}},
+    {"titre": "alice voit le minage", "client": "alice", "attend": {"type": "BLOCK_UPDATE", "payload": {"new_block_id": "AIR"}}, "delai_s": 1},
+    {"titre": "triche : bob pose hors du monde (y=999)", "client": "bob", "envoie": {"type": "PLACE_ATTEMPT", "payload": {"x": 0, "y": 999, "z": 0, "block_id": "STONE"}}, "interdit": {"type": "BLOCK_UPDATE", "payload": {"y": 999}}, "pause_s": 0.6},
+    {"titre": "triche : bloc inconnu « LAVE »", "client": "bob", "envoie": {"type": "PLACE_ATTEMPT", "payload": {"x": 6, "y": 70, "z": 6, "block_id": "LAVE"}}, "interdit": {"type": "BLOCK_UPDATE", "payload": {"new_block_id": "LAVE"}}, "pause_s": 0.6}
+  ]
+}
