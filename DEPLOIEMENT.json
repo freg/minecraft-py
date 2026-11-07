@@ -28,6 +28,11 @@
       "nom": "connexion client → serveur",
       "commande": "python3 client.py --hote 127.0.0.1 --port 25565 --test",
       "cible": "client"
+    },
+    {
+      "nom": "QA cahier des charges (grille)",
+      "commande": "python3 qa_cdc.py",
+      "cible": "client"
     }
   ]
 }

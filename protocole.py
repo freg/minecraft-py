@@ -113,7 +113,7 @@ def decode_player_joined(json_str: str) -> Dict[str, Any]:
 def test_all():
     # Tests d'encodage/décodage
     assert decode_player_move(encode_player_move(10.5, 64, 20.5, "NORTH"))["payload"]["x"] == 10.5
-    assert decode_minig_attempt(encode_minig_attempt(1, 2, 3))["payload"]["z"] == 3
+    assert decode_mining_attempt(encode_mining_attempt(1, 2, 3))["payload"]["z"] == 3
     assert decode_place_attempt(encode_place_attempt(1, 2, 3, "GRASS"))["payload"]["block_id"] == "GRASS"
     
     print("✅ Tous les tests passés avec succès.")
