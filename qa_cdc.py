@@ -9,7 +9,7 @@ Chaque contrôle porte l'identifiant du cahier des charges (F-W01, F-S02...) ou 
 du backlog (P1..P5). Un fichier absent = contrôle en échec (fonction non livrée), pas sauté.
 Hypothèse de transport, le protocole ne la précisant pas : un message JSON par ligne (\\n) sur TCP.
 """
-import importlib, json, os, py_compile, signal, socket, subprocess, sys, tempfile, time, traceback
+import atexit, importlib, json, os, py_compile, signal, socket, subprocess, sys, tempfile, time, traceback
 
 RACINE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, RACINE)
@@ -59,6 +59,10 @@ def exige(fichier):
 
 
 # ---------- outils réseau ----------
+CADRAGE = set()  # écarts de transport observés
+VIVANTS = []  # serveurs lancés, arrêtés à la sortie quoi qu'il arrive
+atexit.register(lambda: [srv.stop() for srv in list(VIVANTS)])
+
 class Serveur:
     def __init__(self, donnees):
         exige("server.py")
@@ -67,6 +71,14 @@ class Serveur:
         self.p = subprocess.Popen([sys.executable, "server.py"], cwd=donnees_cwd(donnees), env=env,
                                   stdin=subprocess.DEVNULL, stdout=open(self.journal, "ab"),
                                   stderr=subprocess.STDOUT, start_new_session=True)
+        VIVANTS.append(self)
+        try:
+            self._attend_port()
+        except BaseException:  # Ctrl-C, alarme, échec : jamais de serveur orphelin
+            self.stop()
+            raise
+
+    def _attend_port(self):
         fin = time.time() + 20
         while time.time() < fin:
             if self.p.poll() is not None:
@@ -76,10 +88,11 @@ class Serveur:
                 return
             except OSError:
                 time.sleep(0.2)
-        self.stop()
-        raise AssertionError("port TCP non ouvert en 20 s")
+        raise AssertionError(f"port TCP {PORT} non ouvert en 20 s (port en dur dans server.py ? variable PORT ignorée ?)")
 
     def stop(self):
+        if self in VIVANTS:
+            VIVANTS.remove(self)
         if self.p.poll() is None:
             self.p.terminate()  # SIGTERM : laisse une chance de sauvegarder
             try:
@@ -109,12 +122,7 @@ class Client:
     def attend(self, type_voulu, delai=2.0, filtre=lambda m: True):
         fin = time.time() + delai
         while time.time() < fin:
-            while b"\n" in self.tampon:
-                ligne, self.tampon = self.tampon.split(b"\n", 1)
-                try:
-                    m = json.loads(ligne)
-                except ValueError:
-                    continue
+            for m in self._messages():
                 if m.get("type") == type_voulu and filtre(m):
                     return m
             self.s.settimeout(max(0.01, fin - time.time()))
@@ -126,6 +134,23 @@ class Client:
                 break
             self.tampon += d
         return None
+
+    def _messages(self):
+        """Tolérant : JSON par ligne, ou objets JSON collés sans séparateur (noté à part)."""
+        texte = self.tampon.decode(errors="replace").lstrip()
+        dec, sortis = json.JSONDecoder(), []
+        while texte:
+            try:
+                m, fin = dec.raw_decode(texte)
+            except ValueError:
+                break  # message incomplet : attendre la suite
+            if not texte[fin:fin + 1].isspace():
+                CADRAGE.add("messages JSON collés sans séparateur (pas de \\n)")
+            texte = texte[fin:].lstrip()
+            if isinstance(m, dict):
+                sortis.append(m)
+        self.tampon = texte.encode()
+        return sortis
 
     def ferme(self):
         self.s.close()
@@ -337,6 +362,8 @@ def main():
             {"id": i, "libelle": l, "etat": e, "detail": dt} for i, l, e, dt, _ in RESULTATS]}, ensure_ascii=False, indent=1))
     else:
         print(f"\nScore : {ok}/{len(RESULTATS)}")
+        for c in sorted(CADRAGE):
+            print(f"⚠ transport : {c}")
         for i, l, e, dt, _ in RESULTATS:
             if e != "OK":
                 print(f"\n--- {i} {l}\n{dt.strip()}")
