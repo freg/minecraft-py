@@ -13,6 +13,7 @@ import importlib, json, os, py_compile, signal, socket, subprocess, sys, tempfil
 
 RACINE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, RACINE)
+sys.dont_write_bytecode = True
 HOTE, PORT = "127.0.0.1", int(os.environ.get("QA_PORT", "25599"))
 MESSAGES = ["JOIN", "AUTH", "PLAYER_MOVE", "MINING_ATTEMPT", "PLACE_ATTEMPT",
             "BLOCK_UPDATE", "CHUNK_LOADED", "PLAYER_JOINED"]
@@ -138,7 +139,8 @@ def meme_bloc(x, y, z):
 @controle("P1", "protocole.py compile")
 def _():
     exige("protocole.py")
-    py_compile.compile(os.path.join(RACINE, "protocole.py"), doraise=True)
+    with tempfile.TemporaryDirectory() as d:  # pas d'écriture dans le projet (droits de l'atelier)
+        py_compile.compile(os.path.join(RACINE, "protocole.py"), cfile=os.path.join(d, "p.pyc"), doraise=True)
 
 
 @controle("P1", "aller-retour encode/décode des 8 messages")
