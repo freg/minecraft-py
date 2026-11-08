@@ -51,7 +51,7 @@ def connect_client(host, port):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Client Minecraft-Py')
     parser.add_argument("--hote", help="Adresse IP du serveur", required=True)
-    parser.add_argument("--port", type=int, help="Port du serveur", required=True)
+    parser.add_argument("--port", type=int, help="Port du serveur", default=25565)
     parser.add_argument("--test", action='store_true', help="Exécuter des tests de base")
     
     args = parser.parse_args()
