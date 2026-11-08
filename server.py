@@ -234,17 +234,26 @@ atexit.register(save_all_chunks)
 
 if __name__ == "__main__":
     # Démarrage d'un thread pour envoyer des heartbeats à intervalles réguliers
-    def heartbeat_thread():
+    async def heartbeat_thread():
         while True:
             try:
                 for player_id in list(connected_players.keys()):
                     send_heartbeat(player_id)
                 # Envoie un heartbeat toutes les 500ms
-                asyncio.sleep(0.5)
+                await asyncio.sleep(0.5)
             except Exception as e:
                 print(f"[!] Erreur de thread heartbeat: {e}")
     
-    heartbeat_t = threading.Thread(target=heartbeat_thread, daemon=True)
+    # Créer un événement pour gérer la boucle async dans un thread
+    def run_heartbeat():
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            loop.run_until_complete(heartbeat_thread())
+        finally:
+            loop.close()
+
+    heartbeat_t = threading.Thread(target=run_heartbeat, daemon=True)
     heartbeat_t.start()
     
     # Ajout du mécanisme de reconnexion au serveur
