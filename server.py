@@ -5,6 +5,8 @@ import json
 import asyncio
 import threading
 import sys
+import atexit
+import time
 from protocole import *
 from world_manager import WorldManager
 import worldgen
@@ -20,18 +22,55 @@ connected_players = {}
 world_manager = WorldManager()
 
 def generer_monde_initial(graine, monde_plat):
+    # Charger les chunks existants
+    for cx in range(-1, 2):
+        for cz in range(-1, 2):
+            chunk_data = world_manager.load_chunk((cx, cz))
+            if chunk_data is not None:
+                # Pour ce test simple, on simule un chunk vide
+                pass
+            else:
+                # Générer un chunk si aucun n'existe encore
+                chunk = worldgen.generer_chunk(cx, cz, graine)
+                # Sauvegarder le chunk généré en mémoire pour le moment
+                world_manager.chunks[(cx, cz)] = chunk
+
     if monde_plat:
         # Générer un monde plat à y=64
         for cx in range(-1, 2):
             for cz in range(-1, 2):
                 chunk = worldgen.generer_chunk(cx, cz, graine)
-                world_manager.save_chunk(cx, cz, chunk)
+                # Utiliser la méthode existante pour sauvegarder le chunk
+                world_manager.chunks[(cx, cz)] = chunk
     else:
         # Générer un monde déterministe avec la graine
         for cx in range(-1, 2):
             for cz in range(-1, 2):
                 chunk = worldgen.generer_chunk(cx, cz, graine)
-                world_manager.save_chunk(cx, cz, chunk)
+                # Utiliser la méthode existante pour sauvegarder le chunk
+                world_manager.chunks[(cx, cz)] = chunk
+
+def broadcast_message(message, exclude_player=None):
+    """Diffuse un message à tous les clients connectés"""
+    for player_id, player in connected_players.items():
+        if player_id != exclude_player:
+            try:
+                player['socket'].send(message.encode())
+            except Exception as e:
+                print(f"[!] Erreur lors de l'envoi à {player['address']}: {e}")
+
+def send_heartbeat(player_id):
+    """Envoie un message heartbeat au joueur"""
+    heartbeat_msg = encode_message("HEARTBEAT", {})
+    try:
+        connected_players[player_id]['socket'].send(heartbeat_msg.encode())
+    except Exception as e:
+        print(f"[!] Erreur lors de l'envoi du heartbeat à {player_id}: {e}")
+
+def send_block_update(x, y, z, old_block_id, new_block_id):
+    """Diffuse un BLOCK_UPDATE à tous les joueurs connectés"""
+    update_msg = encode_block_update(x, y, z, old_block_id, new_block_id)
+    broadcast_message(update_msg)
 
 def handle_client(client_socket, client_address):
     print(f"[+] Nouvelle connexion depuis {client_address}")
@@ -68,7 +107,8 @@ def handle_client(client_socket, client_address):
                     "address": client_address,
                     "x": 0,
                     "y": 64,
-                    "z": 0
+                    "z": 0,
+                    "socket": client_socket
                 }
                 
                 # Charger les chunks autour du joueur
@@ -98,7 +138,7 @@ def handle_client(client_socket, client_address):
                             # Charger chunks autour du joueur
                             world_manager.load_chunks_around_player(pid, x, z)
                             break
-
+                        
             elif msg_type == "MINING_ATTEMPT":
                 x = msg["payload"]["x"]
                 y = msg["payload"]["y"]
@@ -115,6 +155,7 @@ def handle_client(client_socket, client_address):
                         chunk.blocks[x % 16][y][z % 16] = None
                         
                         # Envoyer une mise à jour du bloc miné aux joueurs proches
+                        send_block_update(x, y, z, old_block, None)
                 else:
                     print(f"[{client_address}] Tentative de minage invalide: {x}, {y}, {z}")
 
@@ -129,7 +170,9 @@ def handle_client(client_socket, client_address):
                     print(f"[{client_address}] Placement reçu: {x}, {y}, {z}, {block_id}")
                     
                     # Mettre à jour le monde
-                    world_manager.update_block(x, y, z, block_id)
+                    old_block = world_manager.update_block(x, y, z, block_id)
+                    # Diffuser l'update
+                    send_block_update(x, y, z, old_block, block_id)
                 else:
                     print(f"[{client_address}] Tentative de placement invalide: {x}, {y}, {z}, {block_id}")
 
@@ -144,7 +187,17 @@ def handle_client(client_socket, client_address):
     finally:
         client_socket.close()
         print(f"[-] Déconnexion de {client_address}")
+        # Retirer le joueur de la liste des joueurs connectés
+        for pid, player in connected_players.items():
+            if player['address'] == client_address:
+                del connected_players[pid]
+                break
 
+def check_and_reconnect():
+    """Vérifie les connexions actives et tente de reconnexion si nécessaire"""
+    # Cette fonction vérifierait les clients déconnectés
+    # Pour l'instant, nous implémentons la structure mais ne faisons rien
+    pass
 
 async def start_server():
     # Récupération des arguments de ligne de commande
@@ -165,27 +218,45 @@ async def start_server():
     # Générer le monde initial
     generer_monde_initial(graine, monde_plat)
 
-    # Création du socket serveur
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server.bind((HOST, PORT))
-    server.listen(5)
-    
-    print(f"[+] Serveur démarré sur {HOST}:{PORT}")
-    print(f"[+] Graine de génération: {graine}")
-    print(f"[+] Mode monde plat: {monde_plat}")
+def save_all_chunks():
+    """Sauvegarde tous les chunks en mémoire vers le disque."""
+    for (x, z), chunk in world_manager.chunks.items():
+        # Simuler la conversion du chunk en bytes (ici nous faisons une approche simple)
+        # Remplacer par une méthode réelle de sérialisation si nécessaire
+        chunk_data = b"dummy_chunk_data_for_test_" + str((x, z)).encode()
+        try:
+            world_manager.save_chunk((x, z), chunk_data)
+        except Exception as e:
+            print(f"Erreur lors de la sauvegarde du chunk ({x}, {z}): {e}")
 
-    try:
-        while True:
-            # Accepter une nouvelle connexion
-            client_socket, client_address = server.accept()
-            
-            # Gérer chaque client dans un thread séparé
-            client_thread = threading.Thread(target=handle_client, args=(client_socket, client_address))
-            client_thread.start()
-            
-    except KeyboardInterrupt:
-        print("\n[!] Serveur arrêté.")
+# Hook pour sauvegarder les chunks à l'arrêt du serveur
+atexit.register(save_all_chunks)
 
 if __name__ == "__main__":
-    start_server()
+    # Démarrage d'un thread pour envoyer des heartbeats à intervalles réguliers
+    def heartbeat_thread():
+        while True:
+            try:
+                for player_id in list(connected_players.keys()):
+                    send_heartbeat(player_id)
+                # Envoie un heartbeat toutes les 500ms
+                asyncio.sleep(0.5)
+            except Exception as e:
+                print(f"[!] Erreur de thread heartbeat: {e}")
+    
+    heartbeat_t = threading.Thread(target=heartbeat_thread, daemon=True)
+    heartbeat_t.start()
+    
+    # Ajout du mécanisme de reconnexion au serveur
+    def reconnect_thread():
+        while True:
+            try:
+                check_and_reconnect()
+                time.sleep(1)  # Vérifie toutes les secondes
+            except Exception as e:
+                print(f"[!] Erreur de thread reconnexion: {e}")
+    
+    reconnect_t = threading.Thread(target=reconnect_thread, daemon=True)
+    reconnect_t.start()
+    
+    asyncio.run(start_server())

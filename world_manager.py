@@ -1,3 +1,7 @@
+#!/usr/bin/env python3
+
+import os
+
 class Chunk:
     def __init__(self, x, z):
         self.x = x
@@ -14,10 +18,14 @@ BlockID = {
 }
 
 class WorldManager:
-    def __init__(self):
+    def __init__(self, save_path="./chunks"):
         self.chunks = {}  # stockage des chunks par coordonnées (x, z)
         self.players = {}  # association joueur -> position (x, y, z)
-    
+        self.save_path = save_path
+        
+        # Créer le répertoire de sauvegarde s'il n'existe pas
+        os.makedirs(save_path, exist_ok=True)
+
     def get_chunk(self, x, z):
         """Récupère un chunk existant ou le crée s'il n'existe pas."""
         if (x, z) not in self.chunks:
@@ -80,3 +88,30 @@ class WorldManager:
         chunk = self.get_chunk(x // 16, z // 16)
         if 0 <= x % 16 < 16 and 0 <= y < 256 and 0 <= z % 16 < 16:
             chunk.blocks[x % 16][y][z % 16] = block_id
+
+    def save_chunk(self, chunk_pos, chunk_data):
+        """Sauvegarde un chunk en binaire dans un fichier."""
+        filename = f"chunk_{chunk_pos[0]}_{chunk_pos[1]}.bin.v1"
+        filepath = os.path.join(self.save_path, filename)
+        
+        # Écrire les données avec un header de version
+        with open(filepath, "wb") as f:
+            f.write(b"v1")  # Header de version
+            f.write(chunk_data)
+
+    def load_chunk(self, chunk_pos):
+        """Charge un chunk depuis un fichier binaire."""
+        filename = f"chunk_{chunk_pos[0]}_{chunk_pos[1]}.bin.v1"
+        filepath = os.path.join(self.save_path, filename)
+        
+        if not os.path.exists(filepath):
+            # Retourner None si le fichier n'existe pas
+            return None
+            
+        with open(filepath, "rb") as f:
+            header = f.read(2)  # Lire le header de version
+            if header != b"v1":
+                raise ValueError(f"Version inconnue du chunk : {header}")
+            
+            data = f.read()
+            return data

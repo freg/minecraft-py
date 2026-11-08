@@ -11,6 +11,7 @@ class GameClient:
         self.port = port
         self.socket = None
         self.inventory = [None] * 9  # Inventaire de 9 slots
+        self.predicted_blocks = {}  # Stockage des blocs prédits localement
 
     def connect(self):
         """Connecte le client au serveur."""
@@ -63,6 +64,8 @@ class GameClient:
 
     def send_place(self, x: int, y: int, z: int, block_id: str):
         """Envoie une tentative de placement de bloc au serveur."""
+        # Prédire localement le placement
+        self.predicted_blocks[(x, y, z)] = block_id
         place_msg = encode_place_attempt(x, y, z, block_id)
         self.socket.send(place_msg.encode())
         print(f"Bloc placé à ({x}, {y}, {z}) avec ID {block_id}")
@@ -90,6 +93,9 @@ class GameClient:
                     if 'payload' in msg and 'x' in msg['payload']:
                         x, y, z = msg['payload']['x'], msg['payload']['y'], msg['payload']['z']
                         print(f"Mise à jour du bloc en {x}, {y}, {z}")
+                        # Supprimer la prédiction si elle existait
+                        if (x, y, z) in self.predicted_blocks:
+                            del self.predicted_blocks[(x, y, z)]
                 elif msg_type == "CHUNK_LOADED":
                     print("Réception d'un chunk chargé")
                 elif msg_type == "PLAYER_JOINED":
