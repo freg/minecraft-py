@@ -218,6 +218,14 @@ async def start_server():
     # Générer le monde initial
     generer_monde_initial(graine, monde_plat)
 
+    # Démarrage du serveur TCP avec asyncio
+    server = await asyncio.start_server(handle_client, HOST, PORT)
+    print(f"[+] Serveur démarré sur {HOST}:{PORT}")
+
+    # Boucle d'écoute active
+    async with server:
+        await server.serve_forever()
+
 def save_all_chunks():
     """Sauvegarde tous les chunks en mémoire vers le disque."""
     for (x, z), chunk in world_manager.chunks.items():
