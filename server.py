@@ -207,7 +207,7 @@ def check_and_reconnect():
     # Pour l'instant, nous implémentons la structure mais ne faisons rien
     pass
 
-async def start_server():
+async def start_server(port=25565):
     # Récupération des arguments de ligne de commande
     graine = 42
     monde_plat = False
@@ -227,8 +227,8 @@ async def start_server():
     generer_monde_initial(graine, monde_plat)
 
     # Démarrage du serveur TCP avec asyncio
-    server = await asyncio.start_server(handle_client, HOST, PORT)
-    print(f"[+] Serveur démarré sur {HOST}:{PORT}")
+    server = await asyncio.start_server(handle_client, HOST, port)
+    print(f"[+] Serveur démarré sur {HOST}:{port}")
 
     # Boucle d'écoute active
     async with server:
