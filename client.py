@@ -59,7 +59,8 @@ class GameClient:
     def send_mining(self, x: int, y: int, z: int):
         """Envoie une tentative de minage au serveur."""
         mining_msg = encode_mining_attempt(x, y, z)
-        self.socket.send(mining_msg.encode())
+        if self.socket:
+            self.socket.send(mining_msg.encode())
         print(f"Bloc miné à ({x}, {y}, {z})")
 
     def send_place(self, x: int, y: int, z: int, block_id: str):

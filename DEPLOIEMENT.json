@@ -34,5 +34,6 @@
       "commande": "python3 qa_cdc.py",
       "cible": "client"
     }
-  ]
+  ],
+  "chunk_version": "v1"
 }

@@ -5,11 +5,13 @@ from protocole import VALID_ORIENTATIONS
 class TestValidationAPI(unittest.TestCase):
     def test_validate_endpoint(self):
         """Vérifie la présence des messages définis dans protocole.py"""
-        # Teste que les types de messages sont bien accessibles
-        self.assertIn("PLAYER_MOVE", dir())
-        self.assertIn("BLOCK_UPDATE", dir())
-        self.assertIn("MINING_ATTEMPT", dir())
-        self.assertIn("PLACE_ATTEMPT", dir())
+        # Vérifier les types de message présents dans le module
+        import protocole
+        # On teste que les fonctions d'encodage sont bien présentes (elles définissent les types)
+        self.assertIn("encode_player_move", dir(protocole))
+        self.assertIn("encode_block_update", dir(protocole))
+        self.assertIn("encode_mining_attempt", dir(protocole))
+        self.assertIn("encode_place_attempt", dir(protocole))
 
     def test_encode_message(self):
         """Vérifie l'encodage des messages"""

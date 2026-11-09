@@ -72,23 +72,25 @@ def send_block_update(x, y, z, old_block_id, new_block_id):
     update_msg = encode_block_update(x, y, z, old_block_id, new_block_id)
     broadcast_message(update_msg)
 
-def handle_client(client_socket, client_address):
+async def handle_client(reader, writer):
+    client_address = writer.get_extra_info('peername')
     print(f"[+] Nouvelle connexion depuis {client_address}")
     
     try:
         # Envoyer un message de bienvenue ou configuration initiale
         welcome_msg = encode_message("WELCOME", {"server": "Minecraft-Py Server"})
-        client_socket.send(welcome_msg.encode())
+        writer.write(welcome_msg.encode())
+        await writer.drain()
         
         while True:
             # Réception des messages du client
-            data = client_socket.recv(1024).decode()
+            data = await reader.readline()
             if not data:
                 break
                 
             # Décode le message reçu
             try:
-                msg = decode_message(data)
+                msg = decode_message(data.decode())
             except ValueError as e:
                 print(f"[!] Erreur de décodage: {e}")
                 continue
@@ -108,7 +110,7 @@ def handle_client(client_socket, client_address):
                     "x": 0,
                     "y": 64,
                     "z": 0,
-                    "socket": client_socket
+                    "socket": writer
                 }
                 
                 # Charger les chunks autour du joueur
@@ -116,7 +118,8 @@ def handle_client(client_socket, client_address):
                 
                 # Envoyer confirmation de connexion et ID du joueur
                 response = encode_player_joined(username, player_id)
-                client_socket.send(response.encode())
+                writer.write(response.encode())
+                await writer.drain()
                 
             elif msg_type == "PLAYER_MOVE":
                 x = msg["payload"]["x"]
@@ -185,7 +188,12 @@ def handle_client(client_socket, client_address):
         print(f"[!] Erreur pendant la communication avec {client_address}: {e}")
 
     finally:
-        client_socket.close()
+        try:
+            writer.close()
+            await writer.wait_closed()
+        except Exception:
+            # Le writer est déjà fermé, rien à faire
+            pass
         print(f"[-] Déconnexion de {client_address}")
         # Retirer le joueur de la liste des joueurs connectés
         for pid, player in connected_players.items():
@@ -241,39 +249,5 @@ def save_all_chunks():
 atexit.register(save_all_chunks)
 
 if __name__ == "__main__":
-    # Démarrage d'un thread pour envoyer des heartbeats à intervalles réguliers
-    async def heartbeat_thread():
-        while True:
-            try:
-                for player_id in list(connected_players.keys()):
-                    send_heartbeat(player_id)
-                # Envoie un heartbeat toutes les 500ms
-                await asyncio.sleep(0.5)
-            except Exception as e:
-                print(f"[!] Erreur de thread heartbeat: {e}")
-    
-    # Créer un événement pour gérer la boucle async dans un thread
-    def run_heartbeat():
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        try:
-            loop.run_until_complete(heartbeat_thread())
-        finally:
-            loop.close()
-
-    heartbeat_t = threading.Thread(target=run_heartbeat, daemon=True)
-    heartbeat_t.start()
-    
-    # Ajout du mécanisme de reconnexion au serveur
-    def reconnect_thread():
-        while True:
-            try:
-                check_and_reconnect()
-                time.sleep(1)  # Vérifie toutes les secondes
-            except Exception as e:
-                print(f"[!] Erreur de thread reconnexion: {e}")
-    
-    reconnect_t = threading.Thread(target=reconnect_thread, daemon=True)
-    reconnect_t.start()
-    
+    # Démarrage du serveur avec asyncio
     asyncio.run(start_server())
