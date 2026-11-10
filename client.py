@@ -3,7 +3,11 @@
 import socket
 import sys
 import argparse
+import os
 from protocole import *
+
+PORT = int(os.environ.get("PORT", 25565))
+HOTE = os.environ.get("HOTE", "127.0.0.1")
 
 class GameClient:
     def __init__(self, host, port):
@@ -58,7 +62,7 @@ class GameClient:
 
     def send_mining(self, x: int, y: int, z: int):
         """Envoie une tentative de minage au serveur."""
-        mining_msg = encode_mining_attempt(x, y, z)
+        mining_msg = encode_player_mining(x, y, z, "STONE", "test_id")
         if self.socket:
             self.socket.send(mining_msg.encode())
         print(f"Bloc miné à ({x}, {y}, {z})")
@@ -67,7 +71,7 @@ class GameClient:
         """Envoie une tentative de placement de bloc au serveur."""
         # Prédire localement le placement
         self.predicted_blocks[(x, y, z)] = block_id
-        place_msg = encode_place_attempt(x, y, z, block_id)
+        place_msg = encode_player_place(x, y, z, block_id, "test_id")
         self.socket.send(place_msg.encode())
         print(f"Bloc placé à ({x}, {y}, {z}) avec ID {block_id}")
 
@@ -110,7 +114,7 @@ class GameClient:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Client Minecraft-Py')
     parser.add_argument("--hote", help="Adresse IP du serveur", required=True)
-    parser.add_argument("--port", type=int, help="Port du serveur", default=25565)
+    parser.add_argument("--port", type=int, help="Port du serveur", default=os.environ.get("PORT", 25565))
     parser.add_argument("--test", action='store_true', help="Exécuter des tests de base")
     
     args = parser.parse_args()

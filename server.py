@@ -7,13 +7,14 @@ import threading
 import sys
 import atexit
 import time
+import os
 from protocole import *
 from world_manager import WorldManager
 import worldgen
 
 # Configuration du serveur
-HOST = '127.0.0.1'
-PORT = 25565
+HOST = os.environ.get("HOTE", "127.0.0.1")
+PORT = int(os.environ.get("PORT", 25565))
 
 # Enregistrement des joueurs connectés
 connected_players = {}
