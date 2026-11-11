@@ -6,6 +6,13 @@ from typing import Dict, Any
 # Types valides pour les orientations
 VALID_ORIENTATIONS = ["NORTH", "SOUTH", "EAST", "WEST"]
 
+# BlockID values for AIR, DIRT, GRASS, STONE
+class BlockID:
+    AIR = 0
+    DIRT = 1
+    GRASS = 2
+    STONE = 3
+
 def encode_message(msg_type: str, payload: Dict[str, Any], source_id: str = None) -> str:
     """Encode un message au format JSON."""
     message = {
@@ -145,6 +152,7 @@ def decode_block_update(json_str: str) -> Dict[str, Any]:
     data = decode_message(json_str)
     if data["type"] != "BLOCK_UPDATE":
         raise ValueError("Not a BLOCK_UPDATE message")
+    # Return the whole payload so that we can test all fields
     return data
 
 def decode_chunk_loaded(json_str: str) -> Dict[str, Any]:
