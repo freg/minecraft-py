@@ -1,17 +1,14 @@
 import unittest
 from protocole import encode_player_move, encode_block_update, encode_mining_attempt, encode_place_attempt, encode_message, decode_message
-from protocole import VALID_ORIENTATIONS
 
 class TestValidationAPI(unittest.TestCase):
     def test_validate_endpoint(self):
         """Vérifie la présence des messages définis dans protocole.py"""
-        # Vérifier les types de message présents dans le module
-        import protocole
-        # On teste que les fonctions d'encodage sont bien présentes (elles définissent les types)
-        self.assertIn("encode_player_move", dir(protocole))
-        self.assertIn("encode_block_update", dir(protocole))
-        self.assertIn("encode_mining_attempt", dir(protocole))
-        self.assertIn("encode_place_attempt", dir(protocole))
+        # Teste que les fonctions sont bien importées
+        self.assertTrue(callable(encode_player_move))
+        self.assertTrue(callable(encode_block_update))
+        self.assertTrue(callable(encode_mining_attempt))
+        self.assertTrue(callable(encode_place_attempt))
 
     def test_encode_message(self):
         """Vérifie l'encodage des messages"""
