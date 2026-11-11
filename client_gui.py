@@ -8,6 +8,7 @@ import argparse
 import threading
 import time
 import json
+import os
 from protocole import *
 
 class MinecraftClientGUI:
@@ -20,6 +21,8 @@ class MinecraftClientGUI:
         self.root = None
         self.canvas = None
         self.status_bar = None
+        self.inventory = [None] * 9  # 9 cases d'inventaire
+        self.selected_slot = 0  # Slot sélectionné par défaut
         
         # États du monde (simulé pour l'instant)
         self.world_data = {}
@@ -42,6 +45,7 @@ class MinecraftClientGUI:
         self.root = tk.Tk()
         self.root.title("Minecraft-Py Client")
         self.root.geometry("1024x768")
+        self.root.configure(bg="lightblue")
         
         # Canvas pour le monde
         self.canvas = tk.Canvas(self.root, width=800, height=600, bg="lightblue")
@@ -51,12 +55,77 @@ class MinecraftClientGUI:
         self.status_bar = tk.Label(self.root, text="Connecté", bd=1, relief=tk.SUNKEN, anchor=tk.W)
         self.status_bar.pack(side=tk.BOTTOM, fill=tk.X)
         
+        # Inventaire (9 cases)
+        inventory_frame = tk.Frame(self.root)
+        inventory_frame.pack(pady=5)
+        
+        for i in range(9):
+            btn = tk.Button(inventory_frame, text=str(i+1), width=4, height=2, command=lambda slot=i: self.select_slot(slot))
+            btn.pack(side=tk.LEFT, padx=2)
+            if i == 0:
+                btn.config(bg="yellow")  # Slot sélectionné par défaut
+            self.inventory[i] = btn
+            
+        # Bind des touches pour la sélection d'inventaire (1-9)
+        for i in range(1, 10):
+            self.root.bind(str(i), lambda e, slot=i-1: self.select_slot(slot))
+            
         # Gestion des événements clavier
         self.root.bind('<Key>', self.handle_key_press)
         
+        # Gestion des clics sur le canvas pour placer/miner
+        self.canvas.bind("<Button-1>", self.handle_place_click)  # Clic gauche
+        self.canvas.bind("<Button-3>", self.handle_mine_click)  # Clic droit
+        
+    def select_slot(self, slot):
+        """Selectionne un slot dans l'inventaire."""
+        self.selected_slot = slot
+        for i, btn in enumerate(self.inventory):
+            if i == slot:
+                btn.config(bg="yellow")
+            else:
+                btn.config(bg="SystemButtonFace")
+                
     def handle_key_press(self, event):
-        print(f"Key pressed: {event.keysym}")
+        key = event.keysym.lower()
+        print(f"Key pressed: {key}")
+        
+        # Déplacement avec les flèches ou ZQSD
+        if key in ["up", "w"]:
+            self.send_move("UP")
+        elif key in ["down", "s"]:
+            self.send_move("DOWN")
+        elif key in ["left", "a"]:
+            self.send_move("LEFT")
+        elif key in ["right", "d"]:
+            self.send_move("RIGHT")
+            
+    def send_move(self, direction):
+        """Envoie un message de déplacement."""
+        try:
+            move_msg = encode_player_move(self.username, direction)
+            self.socket.send(move_msg.encode())
+        except Exception as e:
+            print(f"[Erreur] Impossible d'envoyer le déplacement : {e}")
     
+    def handle_place_click(self, event):
+        """Traitement du clic gauche pour placer un bloc."""
+        # Récupérer le slot sélectionné et déterminer le type de bloc (simulé)
+        block_type = "DIRT"  # Pour l'instant, on place toujours du DIRT
+        try:
+            place_msg = encode_player_place(0, 0, 0, block_type, f"{self.username}_place")
+            self.socket.send(place_msg.encode())
+        except Exception as e:
+            print(f"[Erreur] Impossible d'envoyer un placement : {e}")
+            
+    def handle_mine_click(self, event):
+        """Traitement du clic droit pour miner un bloc."""
+        try:
+            mine_msg = encode_player_mining(0, 0, 0, "STONE", f"{self.username}_mine")
+            self.socket.send(mine_msg.encode())
+        except Exception as e:
+            print(f"[Erreur] Impossible d'envoyer une tentative d'extraction : {e}")
+            
     def connect_to_server(self):
         """Se connecte au serveur en utilisant un thread séparé."""
         try:
@@ -106,11 +175,23 @@ class MinecraftClientGUI:
         except Exception as e:
             print(f"[Erreur] Erreur réseau : {e}")
             self.status_bar.config(text=f"Erreur réseau: {e}")
+            # Tentative de reconnexion automatique
+            self.reconnect()
+            
+    def reconnect(self):
+        """Tente une reconnexion automatique."""
+        self.status_bar.config(text="Reconnexion automatique...")
+        time.sleep(2)  # Attente avant reconnexion
+        # On relance une tentative de connexion dans un thread
+        reconnect_thread = threading.Thread(target=self.connect_to_server)
+        reconnect_thread.daemon = True
+        reconnect_thread.start()
             
     def handle_chunk_loaded(self, payload):
         """Gère le chargement d'un chunk."""
-        # Affiche un message de chargement (simulé)
         print("[INFO] Chunk chargé")
+        # Dessin du chunk (simulé)
+        self.canvas.create_rectangle(100, 100, 200, 200, fill="green", outline="black")
         
     def handle_block_update(self, payload):
         """Gère la mise à jour d'un bloc."""
@@ -143,6 +224,7 @@ def test_demarrage():
     root = tk.Tk()
     root.geometry("1024x768")
     root.title("Test Démarrage")
+    root.configure(bg="lightblue")
     
     canvas = tk.Canvas(root, width=800, height=600, bg="lightblue")
     canvas.pack(pady=10)
