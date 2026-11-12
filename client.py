@@ -75,6 +75,15 @@ class GameClient:
         self.socket.send(place_msg.encode())
         print(f"Bloc placé à ({x}, {y}, {z}) avec ID {block_id}")
 
+    def send_block_update(self, x: int, y: int, z: int, old_block_id: str, new_block_id: str):
+        """
+        Envoie une mise à jour de bloc au serveur.
+        """
+        update_msg = encode_block_update(x, y, z, old_block_id, new_block_id)
+        self.socket.send(update_msg.encode())
+        print(f"Mise à jour du bloc en ({x}, {y}, {z}) : {old_block_id} -> {new_block_id}")
+
+
     def handle_events(self):
         """Boucle d'écoute des événements du serveur."""
         while True:
@@ -110,6 +119,41 @@ class GameClient:
             except Exception as e:
                 print(f"[!] Erreur lors de la réception d'événements : {e}")
                 break
+
+    def reconnect(self):
+        """Tentative de reconnexion au serveur."""
+        print("[+] Tentative de reconnexion...")
+        # On essaie de se reconnecter sur une nouvelle socket
+        self.connect()
+
+    def send_heartbeat(self):
+        """Envoie un message heartbeat au serveur."""
+        heartbeat_msg = encode_message("HEARTBEAT", {})
+        if self.socket:
+            try:
+                self.socket.send(heartbeat_msg.encode())
+            except Exception as e:
+                print(f"[!] Erreur lors de l'envoi du heartbeat: {e}")
+
+    def predict_block(self, x: int, y: int, z: int, block_id: str):
+        """
+        Prédit un bloc au sein de l'inventaire local du client.
+        
+        :param x: Coordonnée X du bloc
+        :param y: Coordonnée Y du bloc
+        :param z: Coordonnée Z du bloc
+        :param block_id: ID du bloc à prédire
+        """
+        self.predicted_blocks[(x, y, z)] = block_id
+
+    def send_reconnect(self):
+        """Envoie un message de reconnexion au serveur."""
+        reconnect_msg = encode_message("RECONNECT", {})
+        if self.socket:
+            try:
+                self.socket.send(reconnect_msg.encode())
+            except Exception as e:
+                print(f"[!] Erreur lors de l'envoi du message de reconnexion: {e}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Client Minecraft-Py')
