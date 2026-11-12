@@ -167,6 +167,53 @@ def decode_player_joined(json_str: str) -> Dict[str, Any]:
         raise ValueError("Not a PLAYER_JOINED message")
     return data
 
+# Définition du Chunk (déplacée ici pour éviter l'import circulaire)
+class Chunk:
+    def __init__(self, x: int, z: int, blocks: list = None):
+        self.x = x
+        self.z = z
+        self.blocks = blocks or [[[0 for _ in range(16)] for _ in range(256)] for _ in range(16)]
+
+def encode_chunk(chunk) -> bytes:
+    """Encode un chunk en bytes selon le protocole."""
+    # En-tête de version
+    data = b"v1"
+    
+    # Ajouter les données du chunk en format binaire (little-endian)
+    for y_layer in chunk.blocks:
+        for row in y_layer:
+            for block in row:
+                # Le bloc est encodé comme un entier 32 bits en little endian
+                data += struct.pack('<I', block)
+    
+    return data
+
+def decode_chunk(data: bytes) -> object:
+    """Décode les données binaires vers un objet chunk."""
+    if not data.startswith(b"v1"):
+        raise ValueError("En-tête de version invalide")
+    
+    # Ignorer l'en-tête
+    raw_data = data[2:]
+    
+    # Réinitialiser le chunk avec des valeurs par défaut
+    chunk = Chunk(0, 0)
+    block_index = 0
+    
+    for y_layer in range(16):
+        for row in range(256):
+            for block_index_inner in range(16):
+                if block_index * 4 + 4 <= len(raw_data):
+                    value = struct.unpack('<I', raw_data[block_index*4:block_index*4+4])[0]
+                    chunk.blocks[y_layer][row][block_index_inner] = value
+                    block_index += 1
+                else:
+                    raise ValueError("Données de chunk incomplètes")
+
+    return chunk
+
+import struct
+
 # Test unitaire
 def test_all():
     # Tests d'encodage/décodage

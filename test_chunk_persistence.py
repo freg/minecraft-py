@@ -1,29 +1,38 @@
 import unittest
 import os
-import tempfile
-import world_manager
+import sys
+
+# Add the project root to the path so we can import modules from it
+sys.path.insert(0, os.path.abspath('.'))
+
+from chunks.chunk import Chunk
+from world_manager import save_chunk, load_chunk
+
 
 class TestChunkPersistence(unittest.TestCase):
-    def test_chunk_saving_and_loading(self):
-        """Test que les fichiers de chunks sont bien créés avec le bon format."""
-        # Vérifie qu'on a les fichiers dans le répertoire chunks/
-        self.assertTrue(os.path.exists("./chunks/chunk_0_0.bin.v1"))
-        
-        # Vérifie qu'ils ont le bon header (b"v1") 
-        with open("./chunks/chunk_0_0.bin.v1", "rb") as f:
-            header = f.read(2)
-            self.assertEqual(header, b"v1")
-            
-    def test_chunk_file_formats(self):
-        """Test des formats des fichiers de chunk"""
-        chunks_dir = "./chunks"
-        for filename in os.listdir(chunks_dir):
-            if filename.startswith("chunk_") and filename.endswith(".bin.v1"):
-                filepath = os.path.join(chunks_dir, filename)
-                self.assertTrue(os.path.isfile(filepath))
-                with open(filepath, "rb") as f:
-                    header = f.read(2)
-                    self.assertEqual(header, b"v1")
+    def test_round_trip(self):
+        # Create a chunk with some data
+        chunk = Chunk(0, 0)
+        chunk.blocks[0][0][0] = 1  # Set a block to DIRT
+
+        # Save the chunk to disk
+        save_chunk(chunk)
+
+        # Load the chunk back from disk
+        loaded_chunk = load_chunk(0, 0)
+
+        # Verify that the loaded chunk is equal to the original
+        self.assertEqual(chunk, loaded_chunk)
+
+    def test_load_chunk(self):
+        # Test loading an existing chunk file
+        loaded_chunk = load_chunk(0, 0)
+        self.assertIsInstance(loaded_chunk, Chunk)
+        # Should have a valid structure (not empty chunks)
+        self.assertEqual(len(loaded_chunk.blocks), 16)
+        self.assertEqual(len(loaded_chunk.blocks[0]), 256)
+        self.assertEqual(len(loaded_chunk.blocks[0][0]), 16)
+
 
 if __name__ == '__main__':
     unittest.main()
