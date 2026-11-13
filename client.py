@@ -14,8 +14,19 @@ class GameClient:
         self.host = host
         self.port = port
         self.socket = None
-        self.inventory = [None] * 9  # Inventaire de 9 slots
+        self.inventory = {}  # Inventaire de 9 slots
         self.predicted_blocks = {}  # Stockage des blocs prédits localement
+    
+    def add_item(self, item_type, quantity):
+        """Ajoute un item à l'inventaire avec une capacité limitée de 9 slots."""
+        if item_type not in self.inventory:
+            self.inventory[item_type] = 0
+        
+        # Limitation à 9 slots
+        if self.inventory[item_type] + quantity <= 9 and self.inventory[item_type] + quantity >= 0:
+            self.inventory[item_type] += quantity
+        else:
+            raise ValueError("Capacité d'inventaire dépassée ou quantité négative")
 
     def connect(self):
         """Connecte le client au serveur."""
@@ -50,14 +61,18 @@ class GameClient:
 
         except Exception as e:
             print(f"[!] Erreur de connexion : {e}")
+            # Ne pas fermer socket ici puisqu'elle peut ne pas être initialisée
+            if self.socket and not self.socket._closed:
+                self.socket.close()
         finally:
-            if self.socket:
+            if self.socket and not self.socket._closed:
                 self.socket.close()
 
     def send_move(self, x: float, y: int, z: float, orientation: str):
         """Envoie un message de déplacement au serveur."""
         move_msg = encode_player_move(x, y, z, orientation)
-        self.socket.send(move_msg.encode())
+        if self.socket and not self.socket._closed:
+            self.socket.send(move_msg.encode())
         print(f"Envoi du mouvement à ({x}, {y}, {z}) vers {orientation}")
 
     def send_mining(self, x: int, y: int, z: int):

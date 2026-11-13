@@ -44,12 +44,20 @@ def decode_message(data):
     if "x" in payload:
         if not isinstance(payload["x"], int):
             raise ValueError("Field 'x' must be an integer")
+    else:
+        raise ValueError("Field 'x' is required")
+        
     if "y" in payload:
         if not isinstance(payload["y"], int):
             raise ValueError("Field 'y' must be an integer")
+    else:
+        raise ValueError("Field 'y' is required")
+        
     if "z" in payload:
         if not isinstance(payload["z"], int):
             raise ValueError("Field 'z' must be an integer")
+    else:
+        raise ValueError("Field 'z' is required")
 
     # Validation du block_id
     if "block_id" in payload and payload["block_id"] not in {"AIR", "DIRT", "GRASS", "STONE"}:

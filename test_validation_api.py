@@ -1,5 +1,5 @@
 import unittest
-from protocole import encode_player_move, encode_block_update, encode_mining_attempt, encode_place_attempt, encode_message, decode_message
+from protocole import encode_player_move, encode_block_update, encode_player_mining, encode_player_place, encode_message, decode_message
 
 class TestValidationAPI(unittest.TestCase):
     def test_validate_endpoint(self):

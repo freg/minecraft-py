@@ -14,7 +14,7 @@ import worldgen
 
 # Configuration du serveur
 HOST = os.environ.get("HOTE", "127.0.0.1")
-PORT = int(os.environ.get("PORT", 25565))
+PORT = int(os.environ.get("PORT", 0))
 
 # Enregistrement des joueurs connectés
 connected_players = {}
@@ -208,7 +208,11 @@ def check_and_reconnect():
     # Pour l'instant, nous implémentons la structure mais ne faisons rien
     pass
 
-async def start_server(port=25565):
+async def start_server(port=None):
+    # Si le port n'est pas fourni en argument, utiliser celui défini dans les variables d'environnement
+    if port is None:
+        port = int(os.environ.get("PORT", 0))
+    
     # Récupération des arguments de ligne de commande
     graine = 42
     monde_plat = False
