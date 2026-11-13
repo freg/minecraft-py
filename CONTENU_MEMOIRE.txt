@@ -1,0 +1,1 @@
+L'installation de 'file' avec apt-get a été tentée mais échouée en raison de restrictions d'autorisations. Un contournement via /tmp/apt/lists/partial a été mis en place, mais l'outil 'file' n’est pas disponible dans l’environnement.

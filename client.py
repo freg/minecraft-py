@@ -75,6 +75,11 @@ class GameClient:
             self.socket.send(move_msg.encode())
         print(f"Envoi du mouvement à ({x}, {y}, {z}) vers {orientation}")
 
+    def close(self):
+        """Ferme la connexion avec le serveur."""
+        if self.socket and not self.socket._closed:
+            self.socket.close()
+
     def send_mining(self, x: int, y: int, z: int):
         """Envoie une tentative de minage au serveur."""
         mining_msg = encode_player_mining(x, y, z, "STONE", "test_id")

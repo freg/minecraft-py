@@ -67,6 +67,7 @@ class TestIntegrationF_I01(unittest.TestCase):
         self.assertEqual(self.server_process.poll(), None)
 
         # Fermer la connexion client
+        client.connect()  # Connecter d'abord pour éviter l'erreur
         client.close()
 
         # Le test se termine sans erreur => succès
