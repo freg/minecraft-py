@@ -12,3 +12,5 @@ cp worldgen.py /opt/data/ateliers/_deploiements/minecraft-py/serveur/
 cp worldgen.py /opt/data/ateliers/_deploiements/minecraft-py/client/
 cp test*.py /opt/data/ateliers/_deploiements/minecraft-py/client/
 cp qa_cdc.py /opt/data/ateliers/_deploiements/minecraft-py/client/
+test -f /opt/data/ateliers/_deploiements/minecraft-py/serveur/server.py || exit 1
+test -f /opt/data/ateliers/_deploiements/minecraft-py/client/client.py || exit 1

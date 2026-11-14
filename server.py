@@ -211,7 +211,7 @@ def check_and_reconnect():
 async def start_server(port=None):
     # Si le port n'est pas fourni en argument, utiliser celui défini dans les variables d'environnement
     if port is None:
-        port = int(os.environ.get("PORT", 0))
+        port = int(os.environ.get("PORT", 25565))
     
     # Récupération des arguments de ligne de commande
     graine = 42

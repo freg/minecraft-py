@@ -36,5 +36,6 @@
     }
   ],
   "chunk_version": "v1",
-  "/api/models": "https://api.example.com/models"
+  "api_path": "/api/models",
+  "port": 25565
 }
