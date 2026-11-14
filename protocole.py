@@ -79,11 +79,11 @@ def encode_player_move(x, y, z, source_id):
 
 def encode_player_mining(x, y, z, block_id, source_id):
     payload = {"x": x, "y": y, "z": z, "block_id": block_id}
-    return encode_message("PLAYER_MINING", payload, source_id)
+    return encode_message("MINING_ATTEMPT", payload, source_id)
 
 def encode_player_place(x, y, z, block_id, source_id):
     payload = {"x": x, "y": y, "z": z, "block_id": block_id}
-    return encode_message("PLAYER_PLACE", payload, source_id)
+    return encode_message("PLACE_ATTEMPT", payload, source_id)
 
 def encode_block_update(x: int, y: int, z: int, old_block_id: str, new_block_id: str, source_id: str = None) -> str:
     payload = {"x": x, "y": y, "z": z, "old_block_id": old_block_id, "new_block_id": new_block_id}
@@ -196,7 +196,7 @@ import struct
 # Test unitaire
 def test_all():
     # Tests d'encodage/décodage
-    assert decode_player_move(encode_player_move(10.5, 64, 20.5, "NORTH"))["payload"]["x"] == 10.5
+    assert decode_player_move(encode_player_move(10, 64, 20, "NORTH"))["payload"]["x"] == 10
     assert decode_mining_attempt(encode_player_mining(1, 2, 3, "STONE", "test_id"))["payload"]["z"] == 3
     assert decode_place_attempt(encode_player_place(1, 2, 3, "GRASS", "test_id"))["payload"]["block_id"] == "GRASS"
     
