@@ -27,19 +27,13 @@ def encode_message(msg_type: str, payload: Dict[str, Any], source_id: str = None
 def decode_message(data):
     message = json.loads(data)
     
-    # Validation du message sans source_id (seulement si source_id est présent dans un message)
-    if "source_id" not in message and "payload" in message:
-        # Ce pourrait être un test ou un message avec format incomplet
-        payload = message.get("payload", {})
+    # Si c'est un message simple avec 'type' et 'payload', pas nécessairement 'source_id'
+    if "type" not in message or "payload" not in message:
+        raise ValueError("Malformed message: missing type or payload")
         
-        # Si c'est un message simple, on ignore la validation de source_id pour les tests
-        pass
-    elif "source_id" not in message:
-        raise ValueError("Missing source_id in message")
-
     msg_type = message["type"]
     payload = message["payload"]
-
+    
     # Validation des champs x, y, z
     if "x" in payload:
         if not isinstance(payload["x"], int):
@@ -58,39 +52,16 @@ def decode_message(data):
             raise ValueError("Field 'z' must be an integer")
     else:
         raise ValueError("Field 'z' is required")
-
+        
     # Validation du block_id
     if "block_id" in payload and payload["block_id"] not in {"AIR", "DIRT", "GRASS", "STONE"}:
         raise ValueError("Field 'block_id' must be one of: AIR, DIRT, GRASS, STONE")
-
-    if msg_type == "PLAYER_MOVE":
-        return {
-            "type": "PLAYER_MOVE",
-            "x": int(payload["x"]),
-            "y": int(payload["y"]),
-            "z": int(payload["z"]),
-            "source_id": message.get("source_id", None)  # Peut être None
-        }
-    elif msg_type == "PLAYER_MINING":
-        return {
-            "type": "PLAYER_MINING",
-            "x": int(payload["x"]),
-            "y": int(payload["y"]),
-            "z": int(payload["z"]),
-            "block_id": payload["block_id"],
-            "source_id": message.get("source_id", None)
-        }
-    elif msg_type == "PLAYER_PLACE":
-        return {
-            "type": "PLAYER_PLACE",
-            "x": int(payload["x"]),
-            "y": int(payload["y"]),
-            "z": int(payload["z"]),
-            "block_id": payload["block_id"],
-            "source_id": message.get("source_id", None)
-        }
-    else:
-        raise ValueError(f"Unknown message type: {msg_type}")
+    
+    # Si on atteint ici, le message est bien formé
+    return {
+        "type": msg_type,
+        "payload": payload
+    }
 
 # Fonctions spécifiques à chaque message
 
