@@ -25,3 +25,17 @@ class TestIntegrationFI02(unittest.TestCase):
 
         # Fermer la connexion
         client.disconnect()
+
+    def test_mining_block_with_correct_protocol(self):
+        """Test que le protocole utilise les types MINING_ATTEMPT et BLOCK_UPDATE"""
+        # Vérification du type de message envoyé par le client au serveur lors du minage
+        from protocole import encode_player_mining
+        msg = encode_player_mining(0, 0, 0)
+        # Le message doit être de type MINING_ATTEMPT
+        self.assertIn("MINING_ATTEMPT", json.dumps(msg))
+        
+        # Vérification que le serveur répond avec BLOCK_UPDATE
+        from protocole import decode_server_message
+        raw_update = b'{"type": "BLOCK_UPDATE", "x": 0, "y": 0, "z": 0, "block_type": "dirt"}'
+        decoded = decode_server_message(raw_update)
+        self.assertEqual(decoded["type"], "BLOCK_UPDATE")
