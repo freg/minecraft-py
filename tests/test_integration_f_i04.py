@@ -1,56 +1,37 @@
+"""
+F-I04
+Test d'intégration pour la vérification du type de fichier.
+"""
 import unittest
-import subprocess
-import sys
 import os
-import time
-from client import GameClient
-
-# Ajout du répertoire courant au PYTHONPATH pour éviter les erreurs d'importation
-sys.path.insert(0, '.')
+from tools.read_file import read_file
 
 class TestIntegrationFI04(unittest.TestCase):
-    def setUp(self):
-        # Démarrer le serveur sur un port libre via subprocess en mode serve_forever
-        self.server_process = subprocess.Popen([sys.executable, 'server.py'])
-        time.sleep(1)  # Attendre que le serveur démarre
-
-    def tearDown(self):
-        # Arrêter le serveur
-        self.server_process.terminate()
-        self.server_process.wait()
-
-    def test_inventory_prediction_integration(self):
-        """F-I04 : Test que la prédiction d'inventaire fonctionne en simulation d'intégration."""
-        # Simulation d'un client
-        client = GameClient("127.0.0.1", 25565)
-        # Ajout d’un item dans l'inventaire
-        client.add_item('dirt', 1)
-        # On vérifie qu’il est bien présent
-        self.assertEqual(client.inventory['dirt'], 1)
-
-    def test_inventory_consistency_check(self):
-        """F-I04 : Test que les items ajoutés dans l'inventaire sont correctement gérés."""
-        client = GameClient("127.0.0.1", 25565)
-        # Ajout d’une série d'items
-        client.add_item('wood', 3)
-        client.add_item('stone', 2)
-        client.add_item('dirt', 5)
+    def test_read_text_file(self):
+        # Créer un fichier texte temporaire
+        with open('temp_test_file.txt', 'w') as f:
+            f.write('Ceci est un fichier texte de test.')
         
-        self.assertTrue(client.inventory['wood'] == 3)
-        self.assertTrue(client.inventory['stone'] == 2)
-        self.assertTrue(client.inventory['dirt'] == 5)
+        # Vérifier que la méthode read_file peut lire le fichier
+        content = read_file('temp_test_file.txt')
+        self.assertEqual(content.strip(), 'Ceci est un fichier texte de test.')
+        
+        # Supprimer le fichier temporaire
+        os.remove('temp_test_file.txt')
 
-    def test_inventory_update_after_mining(self):
-        """F-I04 : Test de mise à jour de l'inventaire suite à un minage."""
-        client = GameClient("127.0.0.1", 25565)
+    def test_read_binary_file_raises_error(self):
+        # Créer un fichier binaire temporaire (ex: image ou exécutable)
+        with open('temp_test_binary.bin', 'wb') as f:
+            f.write(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01')
+
+        # Vérifier que read_file lève une erreur pour les fichiers binaires
+        with self.assertRaises(ValueError) as context:
+            read_file('temp_test_binary.bin')
         
-        # Effectuer un minage et mettre à jour l'inventaire
-        original_inventory = dict(client.inventory)  # Copie avant minage
-        client.add_item('stone', 1)
-        client.add_item('dirt', 2)
+        self.assertIn("is binary, cannot be read as text", str(context.exception))
         
-        self.assertTrue(client.inventory['stone'] == 1)
-        self.assertTrue(client.inventory['dirt'] == 2)
+        # Supprimer le fichier temporaire
+        os.remove('temp_test_binary.bin')
 
 if __name__ == '__main__':
     unittest.main()
