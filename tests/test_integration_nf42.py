@@ -1,46 +1,81 @@
-import subprocess
 import unittest
+import socket
+import requests
 import time
-import json
+import subprocess
 import os
 
-class TestNF42(unittest.TestCase):
+class TestSecurityRobustness(unittest.TestCase):
+    """
+    Tests NF-4.2 : Sécurité et Robustesse
+    """
+
     def setUp(self):
-        self.server_process = subprocess.Popen(["python3", "../_deploiements/minecraft-py/serveur/server.py"])
+        # Démarrer le serveur dans un sous-processus
+        self.server_process = subprocess.Popen(
+            ["python3", "../_deploiements/minecraft-py/serveur/server.py"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
         # Attendre que le serveur démarre
         time.sleep(2)
 
     def tearDown(self):
+        # Fermer le serveur à la fin du test
         self.server_process.terminate()
-        self.server_process.wait()
+        try:
+            self.server_process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            self.server_process.kill()
 
-    def test_deployment_file_exists(self):
-        """Vérifie que le fichier DEPLOIEMENT.json existe."""
-        self.assertTrue(os.path.exists('DEPLOIEMENT.json'), "Le fichier DEPLOIEMENT.json n'existe pas.")
+    def test_connection_timeout(self):
+        """NF-4.2: Vérifie la gestion des timeouts de connexion."""
+        # Arrêter le serveur temporairement
+        self.server_process.terminate()
+        try:
+            self.server_process.wait(timeout=1)
+        except subprocess.TimeoutExpired:
+            self.server_process.kill()
+        
+        # Attendre que le port soit libéré
+        time.sleep(1)
+        
+        # Essayer de se connecter, cela devrait échouer avec une erreur de timeout ou connexion refusée
+        with self.assertRaises(requests.exceptions.RequestException):
+            requests.get("http://127.0.0.1:25565/api/serveur", timeout=1)
 
-    def test_api_path_in_deployment(self):
-        """Vérifie que l'API path est bien configuré dans DEPLOIEMENT.json."""
-        with open('DEPLOIEMENT.json', 'r') as f:
-            data = json.load(f)
-        self.assertIn('api_path', data, "api_path non trouvé dans DEPLOIEMENT.json")
-        self.assertEqual(data['api_path'], '/api/models', "L'api_path n'est pas correct.")
+    def test_invalid_input_handling(self):
+        """NF-4.2: Vérifie la gestion des inputs invalides."""
+        # Envoyer une requête mal formée
+        response = requests.post(
+            "http://127.0.0.1:25565/api/serveur",
+            data="{invalid json}",
+            headers={"Content-Type": "application/json"}
+        )
+        # On attend un code d'erreur 400 ou 500 selon l'implémentation du serveur
+        self.assertIn(response.status_code, [400, 500])
 
-    def test_port_in_deployment(self):
-        """Vérifie que le port est bien configuré dans DEPLOIEMENT.json."""
-        with open('DEPLOIEMENT.json', 'r') as f:
-            data = json.load(f)
-        self.assertIn('port', data, "port non trouvé dans DEPLOIEMENT.json")
-        self.assertEqual(data['port'], 25565, "Le port n'est pas correct.")
+    def test_server_restart_handling(self):
+        """NF-4.2: Vérifie la robustesse du serveur face aux redémarrages."""
+        # Fermer le serveur brutalement
+        self.server_process.terminate()
+        try:
+            self.server_process.wait(timeout=1)
+        except subprocess.TimeoutExpired:
+            self.server_process.kill()
 
-    def test_deployment_valid_json(self):
-        """Vérifie que le fichier DEPLOIEMENT.json est un JSON valide."""
-        with open('DEPLOIEMENT.json', 'r') as f:
-            data = json.load(f)
-        self.assertIsInstance(data, dict, "DEPLOIEMENT.json n'est pas un objet JSON valide.")
+        # Redémarrer le serveur
+        self.server_process = subprocess.Popen(
+            ["python3", "../_deploiements/minecraft-py/serveur/server.py"],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE
+        )
+        time.sleep(2)
 
-    def test_connection(self):
-        # Exemple de test : vérifie la connexion au serveur
-        pass
+        # Vérifier qu'il est de nouveau opérationnel
+        response = requests.get("http://127.0.0.1:25565/api/serveur")
+        self.assertEqual(response.status_code, 200)
+
 
 if __name__ == '__main__':
     unittest.main()

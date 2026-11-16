@@ -8,6 +8,9 @@ SERVEUR_DIR="${DEPLOIEMENT_DIR}/serveur"
 CLIENT_DIR="${DEPLOIEMENT_DIR}/client"
 TESTS_CLIENT_DIR="${CLIENT_DIR}/tests_client"
 
+# Installer le paquet 'file' pour vérifier les types de fichiers
+apt-get install -y file
+
 # Créer les répertoires
 mkdir -p "${SERVEUR_DIR}"
 mkdir -p "${CLIENT_DIR}"

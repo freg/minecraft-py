@@ -1,4 +1,9 @@
 #!/bin/bash
+
+# Installation de la dépendance file
+apt-get update
+apt-get install -y file
+
 mkdir -p /var/lib/apt/lists/partial
 mkdir -p /opt/data/ateliers/_deploiements/minecraft-py/serveur
 mkdir -p /opt/data/ateliers/_deploiements/minecraft-py/client

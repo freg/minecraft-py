@@ -4,6 +4,7 @@ import socket
 import sys
 import argparse
 import os
+import magic
 from protocole import *
 
 PORT = int(os.environ.get("PORT", 25565))
