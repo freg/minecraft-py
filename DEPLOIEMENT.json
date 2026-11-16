@@ -35,8 +35,12 @@
       "cible": "client"
     }
   ],
-  "chunk_version": "v1",
+  "chunk_version": "v2",
   "api_path": "/api/models",
-  "port": 25565,
-  "server_path": "../_deploiements/minecraft-py/serveur/server.py"
+  "PORT": 25565,
+  "server": {
+    "port": 25565
+  },
+  "server_path": "../_deploiements/minecraft-py/serveur/server.py",
+  "api_version": ""
 }

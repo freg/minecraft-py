@@ -36,19 +36,25 @@ def decode_message(data):
     
     # Validation des champs x, y, z
     if "x" in payload:
-        if not isinstance(payload["x"], int):
+        try:
+            payload["x"] = int(payload["x"])
+        except (ValueError, TypeError):
             raise ValueError("Field 'x' must be an integer")
     else:
         raise ValueError("Field 'x' is required")
         
     if "y" in payload:
-        if not isinstance(payload["y"], int):
+        try:
+            payload["y"] = int(payload["y"])
+        except (ValueError, TypeError):
             raise ValueError("Field 'y' must be an integer")
     else:
         raise ValueError("Field 'y' is required")
         
     if "z" in payload:
-        if not isinstance(payload["z"], int):
+        try:
+            payload["z"] = int(payload["z"])
+        except (ValueError, TypeError):
             raise ValueError("Field 'z' must be an integer")
     else:
         raise ValueError("Field 'z' is required")
