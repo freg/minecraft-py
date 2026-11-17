@@ -255,4 +255,22 @@ atexit.register(save_all_chunks)
 
 if __name__ == "__main__":
     # Démarrage du serveur avec asyncio
-    asyncio.run(start_server())
+    import sys
+    port = None
+    if len(sys.argv) > 1:
+        try:
+            port = int(sys.argv[1])
+        except ValueError:
+            print("Port invalide, utilisation du port par défaut.")
+    
+    # Trouver un port libre si nécessaire
+    import socket
+    if port is None:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind(('127.0.0.1', 0))
+        s.listen(1)
+        port = s.getsockname()[1]
+        s.close()
+    
+    # Assurer le démarrage correct du serveur asynchrone via asyncio.run
+    asyncio.run(start_server(port))

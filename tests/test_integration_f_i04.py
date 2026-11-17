@@ -4,6 +4,9 @@ Test d'intégration pour la vérification du type de fichier.
 """
 import unittest
 import os
+import sys
+sys.path.insert(0, '.')
+
 from tools.read_file import read_file
 
 class TestIntegrationFI04(unittest.TestCase):
@@ -23,7 +26,7 @@ class TestIntegrationFI04(unittest.TestCase):
         # Créer un fichier binaire temporaire (ex: image ou exécutable)
         with open('temp_test_binary.bin', 'wb') as f:
             f.write(b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01')
-
+        
         # Vérifier que read_file lève une erreur pour les fichiers binaires
         with self.assertRaises(ValueError) as context:
             read_file('temp_test_binary.bin')

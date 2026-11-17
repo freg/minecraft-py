@@ -81,14 +81,35 @@ def encode_auth(token: str) -> str:
 
 def encode_player_move(x, y, z, source_id):
     payload = {"x": x, "y": y, "z": z}
+    # Convertir en entiers si nécessaire
+    if not isinstance(payload["x"], int):
+        payload["x"] = int(payload["x"])
+    if not isinstance(payload["y"], int):
+        payload["y"] = int(payload["y"])
+    if not isinstance(payload["z"], int):
+        payload["z"] = int(payload["z"])
     return encode_message("PLAYER_MOVE", payload, source_id)
 
-def encode_player_mining(x, y, z, block_id, source_id):
+def encode_player_mining(x, y, z, block_id, source_id=None):
     payload = {"x": x, "y": y, "z": z, "block_id": block_id}
+    # Convertir en entiers si nécessaire
+    if not isinstance(payload["x"], int):
+        payload["x"] = int(payload["x"])
+    if not isinstance(payload["y"], int):
+        payload["y"] = int(payload["y"])
+    if not isinstance(payload["z"], int):
+        payload["z"] = int(payload["z"])
     return encode_message("MINING_ATTEMPT", payload, source_id)
 
-def encode_player_place(x, y, z, block_id, source_id):
+def encode_player_place(x, y, z, block_id, source_id=None):
     payload = {"x": x, "y": y, "z": z, "block_id": block_id}
+    # Convertir en entiers si nécessaire
+    if not isinstance(payload["x"], int):
+        payload["x"] = int(payload["x"])
+    if not isinstance(payload["y"], int):
+        payload["y"] = int(payload["y"])
+    if not isinstance(payload["z"], int):
+        payload["z"] = int(payload["z"])
     return encode_message("PLACE_ATTEMPT", payload, source_id)
 
 def encode_block_update(x: int, y: int, z: int, old_block_id: str, new_block_id: str, source_id: str = None) -> str:
@@ -194,7 +215,7 @@ def decode_chunk(data: bytes) -> object:
                     block_index += 1
                 else:
                     raise ValueError("Données de chunk incomplètes")
-
+    
     return chunk
 
 import struct

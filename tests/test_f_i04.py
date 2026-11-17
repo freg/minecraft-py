@@ -4,21 +4,28 @@ import sys
 import os
 import time
 import socket
+import asyncio
+import threading
+from server import Server
 from client import GameClient
 
 # Ajout du répertoire courant au PYTHONPATH pour éviter les erreurs d'importation
 sys.path.insert(0, '.')
 
 class TestF_i04(unittest.TestCase):
-    def setUp(self):
-        # Démarrer le serveur sur un port libre via subprocess en mode serve_forever
-        self.server_process = subprocess.Popen([sys.executable, 'server.py'])
+    @classmethod
+    def setUpClass(cls):
+        # Démarrer le serveur sur un port libre en utilisant asyncio.run()
+        cls.server = Server("127.0.0.1", 25565)
+        cls.server_thread = threading.Thread(target=asyncio.run, args=(cls.server.serve_forever(),))
+        cls.server_thread.start()
         time.sleep(1)  # Attendre que le serveur démarre
 
-    def tearDown(self):
+    @classmethod
+    def tearDownClass(cls):
         # Arrêter le serveur
-        self.server_process.terminate()
-        self.server_process.wait()
+        asyncio.run(cls.server.close())
+        cls.server_thread.join()
 
     def test_add_item(self):
         """F-I04 : Test d'ajout d'item dans l'inventaire."""
